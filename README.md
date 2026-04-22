@@ -302,3 +302,75 @@ docker compose --env-file .env.gcp up -d --build
 ```
 
 Detailed guide: `DEPLOY_ENVIRONMENTS.md`
+
+## Retoma Rapida del Proyecto
+
+### Estado actual (abril 2026)
+
+- Backend, frontend y base de datos levantan por Docker Compose.
+- Login admin funcional:
+  - Email: `admin@mgstore.com`
+  - Password: `admin123`
+- CORS y endpoints locales ya ajustados para `http://localhost`.
+- Modulo de productos:
+  - Soporte de imagen por URL y subida de archivo.
+  - Imagenes por color (`colorId`) y fallback a imagen general.
+- Modulo empresa:
+  - Nombre y logo mantenibles desde admin (`/admin/company-settings`).
+- Modulo ofertas:
+  - Vista admin en `/admin/offers`.
+  - Rebaja por producto y masiva (seleccionados/filtrados).
+  - Soporte de ofertas programadas con inicio/fin.
+- Migraciones Flyway aplicadas hasta `V11`.
+
+### Archivos de entorno
+
+- Local: `.env.local`
+- VM Google: `.env.gcp` (plantilla en `.env.gcp.example`)
+- Guia: `DEPLOY_ENVIRONMENTS.md`
+
+### Levantar local
+
+```bash
+docker compose --env-file .env.local down
+docker compose --env-file .env.local up -d --build
+docker compose --env-file .env.local ps
+```
+
+Accesos:
+
+- Storefront: `http://localhost`
+- Admin: `http://localhost/admin/login`
+- API health: `http://localhost:8891/api/actuator/health`
+
+### Levantar en VM de Google
+
+```bash
+docker compose --env-file .env.gcp down
+docker compose --env-file .env.gcp up -d --build
+docker compose --env-file .env.gcp ps
+```
+
+### Integracion con Caddy (VM)
+
+Bloque recomendado para dominio externo:
+
+```caddy
+agrenova.style.34.61.3.232.sslip.io {
+  encode zstd gzip
+  @api path /api/*
+  reverse_proxy @api mgstore-backend:8891
+  reverse_proxy mgstore-frontend:80
+}
+```
+
+### Problemas comunes y solucion rapida
+
+- `Mixed Content` en HTTPS:
+  - configurar `VITE_API_URL` y `APP_PUBLIC_API_BASE_URL` en HTTPS del dominio.
+- `ERR_EMPTY_RESPONSE` al iniciar:
+  - esperar healthy de backend/frontend y hacer hard refresh.
+- Frontend `unhealthy`:
+  - ya corregido healthcheck en compose a `127.0.0.1`.
+- Si hay cambios nuevos en migraciones:
+  - rebuild backend para ejecutar Flyway.

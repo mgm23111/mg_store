@@ -21,6 +21,8 @@ export interface ProductFormData {
   wholesaleMinQuantity?: number;
   isActive: boolean;
   isFeatured: boolean;
+  offerStartAt?: string;
+  offerEndAt?: string;
 }
 
 export const ProductFormModal = ({
@@ -40,6 +42,8 @@ export const ProductFormModal = ({
     wholesaleMinQuantity: 6,
     isActive: true,
     isFeatured: false,
+    offerStartAt: undefined,
+    offerEndAt: undefined,
   });
   const [loading, setLoading] = useState(false);
 
@@ -55,6 +59,8 @@ export const ProductFormModal = ({
         wholesaleMinQuantity: product.wholesaleMinQuantity || 6,
         isActive: product.isActive ?? true,
         isFeatured: product.isFeatured ?? false,
+        offerStartAt: product.offerStartAt,
+        offerEndAt: product.offerEndAt,
       });
     } else {
       // Reset form when creating new product
@@ -68,6 +74,8 @@ export const ProductFormModal = ({
         wholesaleMinQuantity: 6,
         isActive: true,
         isFeatured: false,
+        offerStartAt: undefined,
+        offerEndAt: undefined,
       });
     }
   }, [product, isOpen]);

@@ -28,6 +28,9 @@ public class ProductResponse {
     private Integer totalStock; // Sum of all variants stock
     private Boolean isActive;
     private Boolean isFeatured;
+    private LocalDateTime offerStartAt;
+    private LocalDateTime offerEndAt;
+    private Boolean offerActive;
     private String metaTitle;
     private String metaDescription;
     private List<ProductImageResponse> images;

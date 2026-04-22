@@ -276,6 +276,7 @@ export const Catalog = () => {
 const ProductCard = ({ product, index = 0 }: { product: Product; index?: number }) => {
   const mainImage = product.images?.[0]?.url || `https://picsum.photos/seed/${product.slug}/600/800`;
   const hasDiscount = product.discountPercentage && product.discountPercentage > 0;
+  const hasWholesaleTier = !!product.wholesalePrice && (product.wholesaleMinQuantity || 6) > 1;
   const finalPrice = hasDiscount
     ? product.retailPrice * (1 - product.discountPercentage! / 100)
     : product.retailPrice;
@@ -332,10 +333,10 @@ const ProductCard = ({ product, index = 0 }: { product: Product; index?: number 
             </span>
           )}
         </div>
-        {product.wholesalePrice && (
+        {hasWholesaleTier && (
           <p className="text-sm text-gray-600 mt-1 flex items-center gap-1">
             <span className="text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded">MAYORISTA</span>
-            S/ {product.wholesalePrice.toFixed(2)}
+            S/ {(product.wholesalePrice ?? 0).toFixed(2)}
           </p>
         )}
         {product.totalStock !== undefined && product.totalStock > 0 && product.totalStock < 10 && (

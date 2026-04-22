@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -333,13 +334,36 @@ public class CartService {
     }
 
     private BigDecimal getUnitPrice(Product product, int quantity) {
-        // Check if wholesale price applies
-        if (product.getWholesalePrice() != null &&
-                product.getWholesaleMinQuantity() != null &&
-                quantity >= product.getWholesaleMinQuantity()) {
+        if (product.getWholesalePrice() == null) {
+            return product.getRetailPrice();
+        }
+
+        int minQty = product.getWholesaleMinQuantity() != null ? product.getWholesaleMinQuantity() : 6;
+
+        // Offer price (min qty = 1) can be scheduled by date range
+        if (minQty <= 1) {
+            if (isOfferScheduleActive(product, LocalDateTime.now())
+                    && product.getWholesalePrice().compareTo(product.getRetailPrice()) < 0) {
+                return product.getWholesalePrice();
+            }
+            return product.getRetailPrice();
+        }
+
+        // Standard wholesale by quantity
+        if (quantity >= minQty) {
             return product.getWholesalePrice();
         }
         return product.getRetailPrice();
+    }
+
+    private boolean isOfferScheduleActive(Product product, LocalDateTime now) {
+        if (product.getOfferStartAt() != null && now.isBefore(product.getOfferStartAt())) {
+            return false;
+        }
+        if (product.getOfferEndAt() != null && now.isAfter(product.getOfferEndAt())) {
+            return false;
+        }
+        return true;
     }
 
     private ColorResponse mapColorToResponse(Color color) {

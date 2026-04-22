@@ -32,6 +32,7 @@ import { AdminCategories } from './pages/admin/Categories';
 import { AdminColors } from './pages/admin/Colors';
 import { AdminSizes } from './pages/admin/Sizes';
 import { AdminCompanySettings } from './pages/admin/CompanySettings';
+import { AdminOffers } from './pages/admin/Offers';
 
 function App() {
   const { sessionId, setCart } = useCartStore();
@@ -239,6 +240,16 @@ function App() {
             <ProtectedRoute>
               <AdminLayout>
                 <AdminSizes />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+        <Route
+          path="/admin/offers"
+          element={
+            <ProtectedRoute>
+              <AdminLayout>
+                <AdminOffers />
               </AdminLayout>
             </ProtectedRoute>
           }

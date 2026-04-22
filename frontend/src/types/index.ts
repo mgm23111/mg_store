@@ -35,6 +35,9 @@ export interface Product {
   totalStock?: number; // Sum of all variants stock
   isActive: boolean;
   isFeatured: boolean;
+  offerStartAt?: string;
+  offerEndAt?: string;
+  offerActive?: boolean;
   images?: ProductImage[];
   variants?: ProductVariant[];
   createdAt: string;

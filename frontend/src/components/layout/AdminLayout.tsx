@@ -25,6 +25,7 @@ export const AdminLayout = ({ children }: AdminLayoutProps) => {
     { path: '/admin/categories', label: 'Categorias', icon: 'CA' },
     { path: '/admin/colors', label: 'Colores', icon: 'CO' },
     { path: '/admin/sizes', label: 'Tallas', icon: 'TA' },
+    { path: '/admin/offers', label: 'Ofertas', icon: 'OF' },
     { path: '/admin/orders', label: 'Pedidos', icon: 'PE' },
     { path: '/admin/yape', label: 'Consola Yape', icon: 'YA' },
     { path: '/admin/coupons', label: 'Cupones', icon: 'CP' },

@@ -100,6 +100,7 @@ export const ProductDetail = () => {
     ? colorImages
     : (generalImages.length > 0 ? generalImages : allImages);
   const hasDiscount = product.discountPercentage && product.discountPercentage > 0;
+  const hasWholesaleTier = !!product.wholesalePrice && (product.wholesaleMinQuantity || 6) > 1;
   const finalPrice = hasDiscount
     ? product.retailPrice * (1 - product.discountPercentage! / 100)
     : product.retailPrice;
@@ -173,9 +174,9 @@ export const ProductDetail = () => {
                 </span>
               )}
             </div>
-            {product.wholesalePrice && (
+            {hasWholesaleTier && (
               <p className="text-gray-600 mt-2">
-                Precio por mayor: S/ {product.wholesalePrice.toFixed(2)}
+                Precio por mayor (desde {product.wholesaleMinQuantity || 6} unidades): S/ {(product.wholesalePrice ?? 0).toFixed(2)}
               </p>
             )}
           </div>

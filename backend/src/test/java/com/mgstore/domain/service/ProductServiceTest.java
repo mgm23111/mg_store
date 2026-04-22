@@ -14,6 +14,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -285,9 +286,11 @@ class ProductServiceTest {
     }
 
     @Test
-    void testCalculateDiscountPercentage() {
+    void testCalculateDiscountPercentage_OnlyForActiveOffer() {
         // Arrange
-        // Product already has wholesalePrice set to 80 and retailPrice to 100
+        product.setWholesaleMinQuantity(1);
+        product.setOfferStartAt(LocalDateTime.now().minusHours(1));
+        product.setOfferEndAt(LocalDateTime.now().plusHours(1));
         when(productRepository.findById(1L)).thenReturn(Optional.of(product));
 
         // Act
@@ -297,6 +300,58 @@ class ProductServiceTest {
         assertNotNull(result);
         assertNotNull(result.getDiscountPercentage());
         assertEquals(20.0, result.getDiscountPercentage().doubleValue(), 0.01);
+        assertTrue(result.getOfferActive());
         assertEquals(BigDecimal.valueOf(80), result.getWholesalePrice());
+    }
+
+    @Test
+    void testCalculateDiscountPercentage_NotAppliedForWholesaleTier() {
+        // Arrange
+        product.setWholesaleMinQuantity(6);
+        when(productRepository.findById(1L)).thenReturn(Optional.of(product));
+
+        // Act
+        ProductResponse result = productService.getProductById(1L);
+
+        // Assert
+        assertNotNull(result);
+        assertNull(result.getDiscountPercentage());
+        assertFalse(result.getOfferActive());
+    }
+
+    @Test
+    void testCreateProduct_InvalidOfferSchedule_Throws() {
+        // Arrange
+        ProductRequest request = ProductRequest.builder()
+                .name("Promo Product")
+                .slug("promo-product")
+                .retailPrice(BigDecimal.valueOf(100))
+                .wholesalePrice(BigDecimal.valueOf(80))
+                .wholesaleMinQuantity(1)
+                .offerStartAt(LocalDateTime.now().plusDays(1))
+                .offerEndAt(LocalDateTime.now())
+                .build();
+
+        when(productRepository.existsBySlug("promo-product")).thenReturn(false);
+
+        // Act + Assert
+        assertThrows(IllegalArgumentException.class, () -> productService.createProduct(request));
+    }
+
+    @Test
+    void testCreateProduct_InvalidOfferPrice_Throws() {
+        // Arrange
+        ProductRequest request = ProductRequest.builder()
+                .name("Promo Product")
+                .slug("promo-price-invalid")
+                .retailPrice(BigDecimal.valueOf(100))
+                .wholesalePrice(BigDecimal.valueOf(120))
+                .wholesaleMinQuantity(1)
+                .build();
+
+        when(productRepository.existsBySlug("promo-price-invalid")).thenReturn(false);
+
+        // Act + Assert
+        assertThrows(IllegalArgumentException.class, () -> productService.createProduct(request));
     }
 }

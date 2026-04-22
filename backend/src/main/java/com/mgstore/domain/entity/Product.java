@@ -51,6 +51,12 @@ public class Product {
     @Column(name = "is_featured")
     private Boolean isFeatured = false;
 
+    @Column(name = "offer_start_at")
+    private LocalDateTime offerStartAt;
+
+    @Column(name = "offer_end_at")
+    private LocalDateTime offerEndAt;
+
     @Column(name = "meta_title", length = 200)
     private String metaTitle;
 

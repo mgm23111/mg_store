@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -101,9 +102,14 @@ public class ProductService {
                 .wholesaleMinQuantity(request.getWholesaleMinQuantity() != null ? request.getWholesaleMinQuantity() : 6)
                 .isActive(request.getIsActive() != null ? request.getIsActive() : true)
                 .isFeatured(request.getIsFeatured() != null ? request.getIsFeatured() : false)
+                .offerStartAt(request.getOfferStartAt())
+                .offerEndAt(request.getOfferEndAt())
                 .metaTitle(request.getMetaTitle())
                 .metaDescription(request.getMetaDescription())
                 .build();
+
+        validatePricingRules(product.getRetailPrice(), product.getWholesalePrice(), product.getWholesaleMinQuantity());
+        validateOfferSchedule(product.getOfferStartAt(), product.getOfferEndAt());
 
         product = productRepository.save(product);
 
@@ -147,6 +153,11 @@ public class ProductService {
             product.setIsFeatured(request.getIsFeatured());
         }
 
+        product.setOfferStartAt(request.getOfferStartAt());
+        product.setOfferEndAt(request.getOfferEndAt());
+        validatePricingRules(product.getRetailPrice(), product.getWholesalePrice(), product.getWholesaleMinQuantity());
+        validateOfferSchedule(product.getOfferStartAt(), product.getOfferEndAt());
+
         product.setMetaTitle(request.getMetaTitle());
         product.setMetaDescription(request.getMetaDescription());
 
@@ -183,9 +194,14 @@ public class ProductService {
                     .sum();
         }
 
-        // Calculate discount percentage if wholesale price exists
+        LocalDateTime now = LocalDateTime.now();
+        boolean offerActive = isOfferActive(product, now);
+
+        // Calculate discount percentage only for active offer pricing (min qty = 1)
         BigDecimal discountPercentage = null;
-        if (product.getWholesalePrice() != null && product.getRetailPrice() != null
+        if (offerActive &&
+                product.getWholesalePrice() != null && product.getRetailPrice() != null
+                && product.getWholesalePrice().compareTo(product.getRetailPrice()) < 0
                 && product.getRetailPrice().compareTo(BigDecimal.ZERO) > 0) {
             BigDecimal discount = product.getRetailPrice().subtract(product.getWholesalePrice());
             discountPercentage = discount.divide(product.getRetailPrice(), 4, RoundingMode.HALF_UP)
@@ -206,6 +222,9 @@ public class ProductService {
                 .totalStock(totalStock)
                 .isActive(product.getIsActive())
                 .isFeatured(product.getIsFeatured())
+                .offerStartAt(product.getOfferStartAt())
+                .offerEndAt(product.getOfferEndAt())
+                .offerActive(offerActive)
                 .metaTitle(product.getMetaTitle())
                 .metaDescription(product.getMetaDescription())
                 .createdAt(product.getCreatedAt())
@@ -268,5 +287,47 @@ public class ProductService {
                 .name(size.getName())
                 .sortOrder(size.getSortOrder())
                 .build();
+    }
+
+    private void validateOfferSchedule(LocalDateTime offerStartAt, LocalDateTime offerEndAt) {
+        if (offerStartAt != null && offerEndAt != null && offerEndAt.isBefore(offerStartAt)) {
+            throw new IllegalArgumentException("Offer end date must be greater than or equal to start date");
+        }
+    }
+
+    private void validatePricingRules(BigDecimal retailPrice, BigDecimal wholesalePrice, Integer wholesaleMinQuantity) {
+        if (wholesaleMinQuantity != null && wholesaleMinQuantity < 1) {
+            throw new IllegalArgumentException("Wholesale minimum quantity must be at least 1");
+        }
+
+        if (retailPrice != null && wholesalePrice != null && wholesaleMinQuantity != null && wholesaleMinQuantity <= 1
+                && wholesalePrice.compareTo(retailPrice) >= 0) {
+            throw new IllegalArgumentException("Offer price must be lower than retail price");
+        }
+    }
+
+    public boolean isOfferActive(Product product, LocalDateTime when) {
+        if (product.getWholesalePrice() == null || product.getRetailPrice() == null) {
+            return false;
+        }
+
+        Integer minQty = product.getWholesaleMinQuantity() != null ? product.getWholesaleMinQuantity() : 6;
+        if (minQty > 1) {
+            return false;
+        }
+
+        if (product.getWholesalePrice().compareTo(product.getRetailPrice()) >= 0) {
+            return false;
+        }
+
+        if (product.getOfferStartAt() != null && when.isBefore(product.getOfferStartAt())) {
+            return false;
+        }
+
+        if (product.getOfferEndAt() != null && when.isAfter(product.getOfferEndAt())) {
+            return false;
+        }
+
+        return true;
     }
 }

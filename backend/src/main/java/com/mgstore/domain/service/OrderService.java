@@ -349,12 +349,36 @@ public class OrderService {
     }
 
     private BigDecimal getUnitPrice(Product product, int quantity) {
-        if (product.getWholesalePrice() != null &&
-                product.getWholesaleMinQuantity() != null &&
-                quantity >= product.getWholesaleMinQuantity()) {
+        if (product.getWholesalePrice() == null) {
+            return product.getRetailPrice();
+        }
+
+        int minQty = product.getWholesaleMinQuantity() != null ? product.getWholesaleMinQuantity() : 6;
+
+        // Offer price (min qty = 1) can be scheduled by date range
+        if (minQty <= 1) {
+            if (isOfferScheduleActive(product, LocalDateTime.now())
+                    && product.getWholesalePrice().compareTo(product.getRetailPrice()) < 0) {
+                return product.getWholesalePrice();
+            }
+            return product.getRetailPrice();
+        }
+
+        // Standard wholesale by quantity
+        if (quantity >= minQty) {
             return product.getWholesalePrice();
         }
         return product.getRetailPrice();
+    }
+
+    private boolean isOfferScheduleActive(Product product, LocalDateTime now) {
+        if (product.getOfferStartAt() != null && now.isBefore(product.getOfferStartAt())) {
+            return false;
+        }
+        if (product.getOfferEndAt() != null && now.isAfter(product.getOfferEndAt())) {
+            return false;
+        }
+        return true;
     }
 
     private BigDecimal getShippingCost(Long shippingMethodId) {
