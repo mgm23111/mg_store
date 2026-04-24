@@ -45,6 +45,8 @@ services:
       APP_UPLOAD_BASE_DIR: ${APP_UPLOAD_BASE_DIR:-uploads}
     ports:
       - "${BACKEND_PORT:-8891}:8891"
+    volumes:
+      - backend_uploads:/app/uploads
     depends_on:
       postgres:
         condition: service_healthy
@@ -118,6 +120,8 @@ volumes:
   postgres_data:
     driver: local
   grafana_data:
+    driver: local
+  backend_uploads:
     driver: local
 
 networks:
