@@ -305,31 +305,34 @@ Detailed guide: `DEPLOY_ENVIRONMENTS.md`
 
 ## Retoma Rapida del Proyecto
 
-### Estado actual (abril 2026)
+Esta seccion esta pensada para retomar el proyecto en cualquier momento, sin depender de contexto previo.
 
-- Backend, frontend y base de datos levantan por Docker Compose.
-- Login admin funcional:
-  - Email: `admin@mgstore.com`
-  - Password: `admin123`
-- CORS y endpoints locales ya ajustados para `http://localhost`.
-- Modulo de productos:
-  - Soporte de imagen por URL y subida de archivo.
-  - Imagenes por color (`colorId`) y fallback a imagen general.
-- Modulo empresa:
-  - Nombre y logo mantenibles desde admin (`/admin/company-settings`).
-- Modulo ofertas:
-  - Vista admin en `/admin/offers`.
-  - Rebaja por producto y masiva (seleccionados/filtrados).
-  - Soporte de ofertas programadas con inicio/fin.
-- Migraciones Flyway aplicadas hasta `V11`.
+### 1) Checklist rapido (2 minutos)
 
-### Archivos de entorno
+```bash
+git status -sb
+docker compose --env-file .env.local ps
+```
+
+Si estas en VM:
+
+```bash
+git status -sb
+docker compose --env-file .env.gcp ps
+```
+
+Verifica:
+- Rama correcta (`main` normalmente)
+- Sin cambios locales inesperados
+- Contenedores `mgstore-postgres`, `mgstore-backend`, `mgstore-frontend` en `Up`
+
+### 2) Archivos de entorno
 
 - Local: `.env.local`
-- VM Google: `.env.gcp` (plantilla en `.env.gcp.example`)
-- Guia: `DEPLOY_ENVIRONMENTS.md`
+- VM: `.env.gcp` (base en `.env.gcp.example`)
+- Guia completa: `DEPLOY_ENVIRONMENTS.md`
 
-### Levantar local
+### 3) Levantar local desde cero
 
 ```bash
 docker compose --env-file .env.local down
@@ -338,12 +341,11 @@ docker compose --env-file .env.local ps
 ```
 
 Accesos:
-
 - Storefront: `http://localhost`
 - Admin: `http://localhost/admin/login`
 - API health: `http://localhost:8891/api/actuator/health`
 
-### Levantar en VM de Google
+### 4) Levantar en VM (produccion/staging)
 
 ```bash
 docker compose --env-file .env.gcp down
@@ -351,9 +353,44 @@ docker compose --env-file .env.gcp up -d --build
 docker compose --env-file .env.gcp ps
 ```
 
-### Integracion con Caddy (VM)
+### 5) Desplegar cambios nuevos en VM
 
-Bloque recomendado para dominio externo:
+En tu maquina local:
+
+```bash
+git add .
+git commit -m "mensaje claro del cambio"
+git push origin main
+```
+
+En la VM:
+
+```bash
+cd ~/mg_store
+git pull origin main
+docker compose --env-file .env.gcp up -d --build backend frontend
+docker compose --env-file .env.gcp ps
+```
+
+### 6) Validaciones despues de deploy
+
+```bash
+curl -I http://localhost:8082/
+curl http://localhost:8891/api/actuator/health
+docker compose --env-file .env.gcp logs --tail=120 frontend
+docker compose --env-file .env.gcp logs --tail=120 backend
+```
+
+Si usas dominio con Caddy:
+
+```bash
+curl -I https://agrenova.style.34.61.3.232.sslip.io/
+curl https://agrenova.style.34.61.3.232.sslip.io/api/actuator/health
+```
+
+### 7) Caddy (VM)
+
+Bloque recomendado:
 
 ```caddy
 agrenova.style.34.61.3.232.sslip.io {
@@ -364,13 +401,31 @@ agrenova.style.34.61.3.232.sslip.io {
 }
 ```
 
-### Problemas comunes y solucion rapida
+Aplicar cambios:
 
+```bash
+docker exec -it sbti-caddy caddy validate --config /etc/caddy/Caddyfile
+docker exec -it sbti-caddy caddy reload --config /etc/caddy/Caddyfile
+```
+
+### 8) Estado funcional esperado
+
+- Login admin operativo:
+  - Email: `admin@mgstore.com`
+  - Password: `admin123`
+- Modulos operativos:
+  - Productos (imagenes por URL/archivo y por color)
+  - Empresa (`/admin/company-settings`)
+  - Ofertas (`/admin/offers`, incluyendo programacion inicio/fin)
+- Migraciones Flyway hasta `V11`
+
+### 9) Troubleshooting rapido
+
+- Frontend `unhealthy` pero pagina carga:
+  - suele ser healthcheck; validar `curl -I http://localhost:8082/`
 - `Mixed Content` en HTTPS:
-  - configurar `VITE_API_URL` y `APP_PUBLIC_API_BASE_URL` en HTTPS del dominio.
-- `ERR_EMPTY_RESPONSE` al iniciar:
-  - esperar healthy de backend/frontend y hacer hard refresh.
-- Frontend `unhealthy`:
-  - ya corregido healthcheck en compose a `127.0.0.1`.
-- Si hay cambios nuevos en migraciones:
-  - rebuild backend para ejecutar Flyway.
+  - usar `VITE_API_URL` y `APP_PUBLIC_API_BASE_URL` con `https://...`
+- Cambios no aparecen en VM:
+  - falto `git push` local o `git pull` en VM
+- Cambios de BD no aplican:
+  - reconstruir backend para ejecutar Flyway (`up -d --build backend`)
