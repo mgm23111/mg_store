@@ -47,6 +47,11 @@ services:
       - "${BACKEND_PORT:-8891}:8891"
     volumes:
       - backend_uploads:/app/uploads
+    entrypoint: ["/bin/sh", "-c"]
+    command: >
+      mkdir -p /app/uploads/company /app/uploads/products &&
+      chown -R spring:spring /app/uploads &&
+      exec su -s /bin/sh spring -c 'java -jar /app/app.jar'
     depends_on:
       postgres:
         condition: service_healthy

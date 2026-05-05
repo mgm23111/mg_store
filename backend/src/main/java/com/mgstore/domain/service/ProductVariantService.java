@@ -1,6 +1,9 @@
 package com.mgstore.domain.service;
 
 import com.mgstore.application.dto.request.ProductVariantRequest;
+import com.mgstore.application.dto.response.ColorResponse;
+import com.mgstore.application.dto.response.ProductVariantResponse;
+import com.mgstore.application.dto.response.SizeResponse;
 import com.mgstore.domain.entity.Color;
 import com.mgstore.domain.entity.Product;
 import com.mgstore.domain.entity.ProductVariant;
@@ -99,6 +102,35 @@ public class ProductVariantService {
         variant.setIsActive(request.getIsActive());
 
         return productVariantRepository.save(variant);
+    }
+
+    public ProductVariantResponse toResponse(ProductVariant variant) {
+        return ProductVariantResponse.builder()
+                .id(variant.getId())
+                .sku(variant.getSku())
+                .color(variant.getColor() != null ? mapColorToResponse(variant.getColor()) : null)
+                .size(variant.getSize() != null ? mapSizeToResponse(variant.getSize()) : null)
+                .stockQuantity(variant.getStockQuantity())
+                .reservedQuantity(variant.getReservedQuantity())
+                .availableStock(variant.getAvailableStock())
+                .isActive(variant.getIsActive())
+                .build();
+    }
+
+    private ColorResponse mapColorToResponse(Color color) {
+        return ColorResponse.builder()
+                .id(color.getId())
+                .name(color.getName())
+                .hexCode(color.getHexCode())
+                .build();
+    }
+
+    private SizeResponse mapSizeToResponse(Size size) {
+        return SizeResponse.builder()
+                .id(size.getId())
+                .name(size.getName())
+                .sortOrder(size.getSortOrder())
+                .build();
     }
 
     private String generateSku(Product product, Color color, Size size) {

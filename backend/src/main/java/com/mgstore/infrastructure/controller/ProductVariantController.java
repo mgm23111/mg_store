@@ -2,6 +2,7 @@ package com.mgstore.infrastructure.controller;
 
 import com.mgstore.application.dto.request.ProductVariantRequest;
 import com.mgstore.application.dto.response.ApiResponse;
+import com.mgstore.application.dto.response.ProductVariantResponse;
 import com.mgstore.domain.entity.ProductVariant;
 import com.mgstore.domain.service.ProductVariantService;
 import jakarta.validation.Valid;
@@ -26,23 +27,26 @@ public class ProductVariantController {
      * Add variant to product
      */
     @PostMapping("/{productId}/variants")
-    public ResponseEntity<ApiResponse<ProductVariant>> addProductVariant(
+    public ResponseEntity<ApiResponse<ProductVariantResponse>> addProductVariant(
             @PathVariable Long productId,
             @Valid @RequestBody ProductVariantRequest request) {
 
         ProductVariant variant = productVariantService.addProductVariant(productId, request);
+        ProductVariantResponse response = productVariantService.toResponse(variant);
         return ResponseEntity.status(HttpStatus.CREATED)
-                .body(ApiResponse.success("Variant added successfully", variant));
+                .body(ApiResponse.success("Variant added successfully", response));
     }
 
     /**
      * Get all variants for a product
      */
     @GetMapping("/{productId}/variants")
-    public ResponseEntity<ApiResponse<List<ProductVariant>>> getProductVariants(
+    public ResponseEntity<ApiResponse<List<ProductVariantResponse>>> getProductVariants(
             @PathVariable Long productId) {
 
-        List<ProductVariant> variants = productVariantService.getProductVariants(productId);
+        List<ProductVariantResponse> variants = productVariantService.getProductVariants(productId).stream()
+                .map(productVariantService::toResponse)
+                .toList();
         return ResponseEntity.ok(ApiResponse.success(variants));
     }
 
@@ -50,12 +54,13 @@ public class ProductVariantController {
      * Update product variant
      */
     @PutMapping("/variants/{variantId}")
-    public ResponseEntity<ApiResponse<ProductVariant>> updateProductVariant(
+    public ResponseEntity<ApiResponse<ProductVariantResponse>> updateProductVariant(
             @PathVariable Long variantId,
             @Valid @RequestBody ProductVariantRequest request) {
 
         ProductVariant variant = productVariantService.updateProductVariant(variantId, request);
-        return ResponseEntity.ok(ApiResponse.success("Variant updated successfully", variant));
+        ProductVariantResponse response = productVariantService.toResponse(variant);
+        return ResponseEntity.ok(ApiResponse.success("Variant updated successfully", response));
     }
 
     /**
